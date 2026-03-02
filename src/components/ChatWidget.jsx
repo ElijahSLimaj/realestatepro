@@ -1,33 +1,87 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLanguage } from '../context/LanguageContext'
+import { useSiteSettings } from '../context/SiteSettingsContext'
+import { supabase, supabaseConfigured } from '../lib/supabase'
 import { MessageCircle, X, Send } from 'lucide-react'
 
 export default function ChatWidget() {
   const { t } = useLanguage()
+  const { settings } = useSiteSettings()
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [initialized, setInitialized] = useState(false)
+  const [sessionId, setSessionId] = useState(null)
   const bottomRef = useRef(null)
 
   useEffect(() => {
     if (open && !initialized) {
       setMessages([{ from: 'bot', text: t('chat.welcomeMessage') }])
       setInitialized(true)
+
+      if (supabaseConfigured) {
+        supabase
+          .from('chat_sessions')
+          .insert({ status: 'active' })
+          .select('id')
+          .single()
+          .then(({ data }) => {
+            if (data) setSessionId(data.id)
+          })
+      }
     }
   }, [open, initialized, t])
+
+  // Subscribe to agent replies via Supabase Realtime
+  useEffect(() => {
+    if (!supabaseConfigured || !sessionId) return
+
+    const channel = supabase
+      .channel(`chat-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `session_id=eq.${sessionId}`,
+        },
+        (payload) => {
+          if (payload.new.sender === 'agent') {
+            setMessages((prev) => [...prev, { from: 'bot', text: payload.new.message }])
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [sessionId])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const send = (text) => {
+  const send = async (text) => {
     if (!text.trim()) return
     setMessages((prev) => [...prev, { from: 'user', text }])
     setInput('')
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { from: 'bot', text: t('chat.autoReply') }])
-    }, 1000)
+
+    if (supabaseConfigured && sessionId) {
+      await supabase.from('chat_messages').insert({
+        session_id: sessionId,
+        sender: 'visitor',
+        message: text,
+      })
+    }
+
+    // Auto-reply if Supabase is not configured (demo mode)
+    if (!supabaseConfigured) {
+      setTimeout(() => {
+        setMessages((prev) => [...prev, { from: 'bot', text: t('chat.autoReply') }])
+      }, 1000)
+    }
   }
 
   const quickReplies = [
@@ -55,7 +109,7 @@ export default function ChatWidget() {
           {/* Header */}
           <div className="bg-primary px-6 py-4">
             <div className="text-white font-bold">{t('chat.title')}</div>
-            <div className="text-white/50 text-xs">VastGoed Elite</div>
+            <div className="text-white/50 text-xs">{settings.companyName}</div>
           </div>
 
           {/* Messages */}

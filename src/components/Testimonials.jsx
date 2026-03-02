@@ -1,15 +1,36 @@
 import { useState } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import { siteConfig } from '../data/siteConfig'
+import { useSupabaseQuery } from '../hooks/useSupabaseQuery'
+import { supabaseConfigured } from '../lib/supabase'
+import { getLocalizedField } from '../lib/utils'
 import { ChevronLeft, ChevronRight, Quote } from 'lucide-react'
 
 export default function Testimonials() {
   const { t, lang } = useLanguage()
   const [current, setCurrent] = useState(0)
-  const reviews = siteConfig.testimonials
+
+  const { data: dbTestimonials } = useSupabaseQuery('testimonials', {
+    filters: { is_visible: true },
+    fallbackData: [],
+  })
+
+  const reviews = supabaseConfigured && dbTestimonials.length > 0
+    ? dbTestimonials
+    : siteConfig.testimonials
 
   const prev = () => setCurrent((c) => (c === 0 ? reviews.length - 1 : c - 1))
   const next = () => setCurrent((c) => (c === reviews.length - 1 ? 0 : c + 1))
+
+  const getReviewText = (review) =>
+    supabaseConfigured && dbTestimonials.length > 0
+      ? getLocalizedField(review, 'text', lang)
+      : review.text[lang]
+
+  const getPropertyType = (review) =>
+    supabaseConfigured && dbTestimonials.length > 0
+      ? getLocalizedField(review, 'property_type', lang)
+      : review.propertyType[lang]
 
   return (
     <section id="reviews" className="py-20 lg:py-28 bg-primary">
@@ -32,11 +53,11 @@ export default function Testimonials() {
           <div className="relative bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-8 lg:p-12">
             <Quote size={48} className="text-accent/30 mb-6" />
             <p className="text-white text-lg lg:text-xl leading-relaxed mb-8">
-              &ldquo;{reviews[current].text[lang]}&rdquo;
+              &ldquo;{getReviewText(reviews[current])}&rdquo;
             </p>
             <div>
               <div className="font-bold text-white text-lg">{reviews[current].name}</div>
-              <div className="text-accent text-sm">{reviews[current].propertyType[lang]}</div>
+              <div className="text-accent text-sm">{getPropertyType(reviews[current])}</div>
               <div className="text-white/50 text-sm">{reviews[current].location}</div>
               <div className="flex gap-0.5 mt-2">
                 {[...Array(reviews[current].rating)].map((_, i) => (

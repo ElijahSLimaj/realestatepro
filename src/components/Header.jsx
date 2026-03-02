@@ -1,21 +1,30 @@
 import { useState, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useLanguage } from '../context/LanguageContext'
-import { siteConfig } from '../data/siteConfig'
+import { useSiteSettings } from '../context/SiteSettingsContext'
 import { Menu, X, Phone, Globe, ChevronDown } from 'lucide-react'
 
 const langLabels = { nl: 'NL', fr: 'FR', en: 'EN' }
 
 export default function Header() {
   const { t, lang, switchLang } = useLanguage()
+  const { settings } = useSiteSettings()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [langDropdown, setLangDropdown] = useState(false)
+
+  const isHome = location.pathname === '/'
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  // On detail pages, always use solid header style
+  const solid = !isHome || scrolled
 
   const navItems = [
     { key: 'properties', href: '#properties' },
@@ -28,6 +37,10 @@ export default function Header() {
 
   const scrollTo = (href) => {
     setMenuOpen(false)
+    if (!isHome) {
+      navigate('/' + href)
+      return
+    }
     const el = document.querySelector(href)
     if (el) el.scrollIntoView({ behavior: 'smooth' })
   }
@@ -35,28 +48,28 @@ export default function Header() {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
+        solid
           ? 'bg-white/95 backdrop-blur-md shadow-lg py-2'
           : 'bg-transparent py-6'
       }`}
     >
       {/* Top bar */}
-      <div className={`hidden lg:block border-b transition-colors duration-300 ${scrolled ? 'border-neutral-200' : 'border-white/20'}`}>
+      <div className={`hidden lg:block border-b transition-colors duration-300 ${solid ? 'border-neutral-200' : 'border-white/20'}`}>
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center py-2.5 text-sm">
           <a
-            href={`tel:${siteConfig.phone}`}
+            href={`tel:${settings.phone}`}
             className={`flex items-center gap-2 font-medium transition-colors ${
-              scrolled ? 'text-primary hover:text-accent' : 'text-white hover:text-accent-light'
+              solid ? 'text-primary hover:text-accent' : 'text-white hover:text-accent-light'
             }`}
           >
             <Phone size={14} />
-            {siteConfig.phone}
+            {settings.phone}
           </a>
           <div className="relative">
             <button
               onClick={() => setLangDropdown(!langDropdown)}
               className={`flex items-center gap-1.5 font-medium transition-colors ${
-                scrolled ? 'text-neutral-600 hover:text-primary' : 'text-white/80 hover:text-white'
+                solid ? 'text-neutral-600 hover:text-primary' : 'text-white/80 hover:text-white'
               }`}
             >
               <Globe size={14} />
@@ -84,18 +97,18 @@ export default function Header() {
 
       {/* Main nav */}
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between py-3">
-        <a href="#" className="flex items-center gap-3" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+        <a href="/" className="flex items-center gap-3" onClick={(e) => { e.preventDefault(); if (isHome) window.scrollTo({ top: 0, behavior: 'smooth' }); else navigate('/') }}>
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg ${
-            scrolled ? 'bg-primary text-accent' : 'bg-white/10 backdrop-blur-sm text-accent border border-white/20'
+            solid ? 'bg-primary text-accent' : 'bg-white/10 backdrop-blur-sm text-accent border border-white/20'
           }`}>
-            {siteConfig.companyName.charAt(0)}
+            {settings.companyName.charAt(0)}
           </div>
           <div>
-            <span className={`text-xl font-bold tracking-tight ${scrolled ? 'text-primary' : 'text-white'}`}>
-              {siteConfig.companyName}
+            <span className={`text-xl font-bold tracking-tight ${solid ? 'text-primary' : 'text-white'}`}>
+              {settings.companyName}
             </span>
-            <span className={`block text-[10px] uppercase tracking-[0.2em] ${scrolled ? 'text-neutral-400' : 'text-white/60'}`}>
-              {siteConfig.tagline}
+            <span className={`block text-[10px] uppercase tracking-[0.2em] ${solid ? 'text-neutral-400' : 'text-white/60'}`}>
+              {settings.tagline}
             </span>
           </div>
         </a>
@@ -107,7 +120,7 @@ export default function Header() {
               key={key}
               onClick={() => scrollTo(href)}
               className={`text-sm font-medium transition-colors relative group ${
-                scrolled ? 'text-neutral-600 hover:text-primary' : 'text-white/90 hover:text-white'
+                solid ? 'text-neutral-600 hover:text-primary' : 'text-white/90 hover:text-white'
               }`}
             >
               {t(`nav.${key}`)}
@@ -129,7 +142,7 @@ export default function Header() {
         {/* Mobile menu button */}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className={`lg:hidden p-2 rounded-lg ${scrolled ? 'text-primary' : 'text-white'}`}
+          className={`lg:hidden p-2 rounded-lg ${solid ? 'text-primary' : 'text-white'}`}
         >
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -150,10 +163,10 @@ export default function Header() {
             ))}
             <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-col gap-3">
               <a
-                href={`tel:${siteConfig.phone}`}
+                href={`tel:${settings.phone}`}
                 className="flex items-center gap-2 py-3 px-4 text-primary font-semibold"
               >
-                <Phone size={18} /> {siteConfig.phone}
+                <Phone size={18} /> {settings.phone}
               </a>
               <button
                 onClick={() => scrollTo('#valuation')}

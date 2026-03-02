@@ -1,20 +1,26 @@
 import { useState } from 'react'
 import { useLanguage } from '../context/LanguageContext'
-import { siteConfig } from '../data/siteConfig'
-import { Home, ArrowRight } from 'lucide-react'
+import { useSiteSettings } from '../context/SiteSettingsContext'
+import { supabase, supabaseConfigured } from '../lib/supabase'
+import { Home, ArrowRight, Check } from 'lucide-react'
 
 export default function HomeValuation() {
   const { t } = useLanguage()
+  const { settings } = useSiteSettings()
   const [propertyType, setPropertyType] = useState('')
   const [postcode, setPostcode] = useState('')
   const [area, setArea] = useState(100)
   const [rooms, setRooms] = useState(3)
   const [yearBuilt, setYearBuilt] = useState(2000)
   const [result, setResult] = useState(null)
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const calculate = () => {
     if (!propertyType) return
-    const rates = siteConfig.valuationRates[propertyType]
+    const rates = settings.valuationRates[propertyType]
     if (!rates) return
 
     const ageFactor = yearBuilt >= 2010 ? 1.15 : yearBuilt >= 1990 ? 1.0 : 0.9
@@ -25,8 +31,25 @@ export default function HomeValuation() {
     setResult({ min, max })
   }
 
+  const submitLead = async () => {
+    if (!supabaseConfigured || !result) return
+    setSubmitting(true)
+    try {
+      await supabase.from('leads').insert({
+        type: 'valuation',
+        email: email || null,
+        phone: phone || null,
+        data: { propertyType, postcode, area, rooms, yearBuilt, estimatedMin: result.min, estimatedMax: result.max },
+      })
+      setSubmitted(true)
+    } catch (err) {
+      console.error('Failed to submit valuation lead:', err)
+    }
+    setSubmitting(false)
+  }
+
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('nl-NL', {
+    return new Intl.NumberFormat('nl-BE', {
       style: 'currency',
       currency: 'EUR',
       maximumFractionDigits: 0,
@@ -62,7 +85,7 @@ export default function HomeValuation() {
                 <select
                   value={propertyType}
                   onChange={(e) => setPropertyType(e.target.value)}
-                  className="w-full border-2 border-neutral-200 rounded-lg px-4 py-3 focus:border-accent focus:outline-none transition-colors"
+                  className="w-full border-2 border-neutral-200 rounded-lg ps-4 pe-10 py-3 focus:border-accent focus:outline-none transition-colors"
                 >
                   <option value="">{t('valuation.propertyTypeSelect')}</option>
                   <option value="apartment">{t('valuation.apartment')}</option>
@@ -162,10 +185,42 @@ export default function HomeValuation() {
                 <p className="text-white/50 text-sm mb-6">
                   {t('valuation.disclaimer')}
                 </p>
-                <button className="group inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white font-semibold px-6 py-3 rounded-lg transition-all">
-                  {t('valuation.requestValuation')}
-                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-                </button>
+
+                {submitted ? (
+                  <div className="inline-flex items-center gap-2 text-success font-semibold">
+                    <Check size={20} />
+                    {t('valuation.requestValuation')} ✓
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {supabaseConfigured && (
+                      <div className="flex gap-3 justify-center mb-4">
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Email"
+                          className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/40 text-sm focus:outline-none focus:border-accent"
+                        />
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="Telefoon"
+                          className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/40 text-sm focus:outline-none focus:border-accent"
+                        />
+                      </div>
+                    )}
+                    <button
+                      onClick={submitLead}
+                      disabled={submitting}
+                      className="group inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white font-semibold px-6 py-3 rounded-lg transition-all disabled:opacity-50"
+                    >
+                      {t('valuation.requestValuation')}
+                      <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

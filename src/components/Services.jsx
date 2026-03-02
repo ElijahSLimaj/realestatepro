@@ -1,7 +1,13 @@
 import { useLanguage } from '../context/LanguageContext'
+import { useSupabaseQuery } from '../hooks/useSupabaseQuery'
+import { supabaseConfigured } from '../lib/supabase'
+import { getLocalizedField } from '../lib/utils'
+import { Link } from 'react-router-dom'
 import { Home, TrendingUp, Building2, ClipboardCheck, PiggyBank, Scale, ArrowRight } from 'lucide-react'
 
-const services = [
+const iconMap = { Home, TrendingUp, Building2, ClipboardCheck, PiggyBank, Scale }
+
+const staticServices = [
   { key: 'buying', icon: Home },
   { key: 'selling', icon: TrendingUp },
   { key: 'rental', icon: Building2 },
@@ -11,7 +17,12 @@ const services = [
 ]
 
 export default function Services() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
+
+  const { data: dbServices } = useSupabaseQuery('services', {
+    order: { column: 'sort_order' },
+    fallbackData: [],
+  })
 
   return (
     <section id="services" className="py-20 lg:py-28 bg-white">
@@ -31,26 +42,53 @@ export default function Services() {
 
         {/* Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map(({ key, icon: Icon }) => (
-            <div
-              key={key}
-              className="group bg-neutral-50 hover:bg-primary rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
-            >
-              <div className="w-14 h-14 bg-accent/10 group-hover:bg-white/20 rounded-xl flex items-center justify-center mb-6 transition-colors">
-                <Icon size={28} className="text-accent group-hover:text-accent-light transition-colors" />
-              </div>
-              <h3 className="text-xl font-bold text-primary group-hover:text-white mb-3 transition-colors">
-                {t(`services.${key}`)}
-              </h3>
-              <p className="text-neutral-500 group-hover:text-white/80 mb-6 leading-relaxed transition-colors">
-                {t(`services.${key}Desc`)}
-              </p>
-              <span className="inline-flex items-center gap-2 text-accent group-hover:text-accent-light font-semibold text-sm transition-colors">
-                {t('services.learnMore')}
-                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-              </span>
-            </div>
-          ))}
+          {supabaseConfigured
+            ? dbServices.map((service) => {
+                const Icon = iconMap[service.icon_name] || Home
+                return (
+                  <Link
+                    to={`/service/${service.key}`}
+                    key={service.id}
+                    className="group bg-neutral-50 hover:bg-primary rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+                  >
+                    <div className="w-14 h-14 bg-accent/10 group-hover:bg-white/20 rounded-xl flex items-center justify-center mb-6 transition-colors">
+                      <Icon size={28} className="text-accent group-hover:text-accent-light transition-colors" />
+                    </div>
+                    <h3 className="text-xl font-bold text-primary group-hover:text-white mb-3 transition-colors">
+                      {getLocalizedField(service, 'title', lang)}
+                    </h3>
+                    <p className="text-neutral-500 group-hover:text-white/80 mb-6 leading-relaxed transition-colors">
+                      {getLocalizedField(service, 'description', lang)}
+                    </p>
+                    <span className="inline-flex items-center gap-2 text-accent group-hover:text-accent-light font-semibold text-sm transition-colors">
+                      {t('services.learnMore')}
+                      <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </Link>
+                )
+              })
+            : staticServices.map(({ key, icon: Icon }) => (
+                <Link
+                  to={`/service/${key}`}
+                  key={key}
+                  className="group bg-neutral-50 hover:bg-primary rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+                >
+                  <div className="w-14 h-14 bg-accent/10 group-hover:bg-white/20 rounded-xl flex items-center justify-center mb-6 transition-colors">
+                    <Icon size={28} className="text-accent group-hover:text-accent-light transition-colors" />
+                  </div>
+                  <h3 className="text-xl font-bold text-primary group-hover:text-white mb-3 transition-colors">
+                    {t(`services.${key}`)}
+                  </h3>
+                  <p className="text-neutral-500 group-hover:text-white/80 mb-6 leading-relaxed transition-colors">
+                    {t(`services.${key}Desc`)}
+                  </p>
+                  <span className="inline-flex items-center gap-2 text-accent group-hover:text-accent-light font-semibold text-sm transition-colors">
+                    {t('services.learnMore')}
+                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                  </span>
+                </Link>
+              ))
+          }
         </div>
       </div>
     </section>

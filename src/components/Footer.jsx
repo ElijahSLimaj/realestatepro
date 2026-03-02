@@ -1,9 +1,13 @@
 import { useLanguage } from '../context/LanguageContext'
+import { useSiteSettings } from '../context/SiteSettingsContext'
 import { siteConfig } from '../data/siteConfig'
+import { useSupabaseQuery } from '../hooks/useSupabaseQuery'
+import { supabaseConfigured } from '../lib/supabase'
 import { Phone, Mail, MapPin } from 'lucide-react'
 
 export default function Footer() {
   const { t } = useLanguage()
+  const { settings } = useSiteSettings()
 
   const scrollTo = (id) => {
     document.querySelector(id)?.scrollIntoView({ behavior: 'smooth' })
@@ -17,7 +21,8 @@ export default function Footer() {
     { label: t('nav.blog'), href: '#blog' },
   ]
 
-  const areas = siteConfig.neighborhoods.slice(0, 5).map(n => n.name)
+  const { data: neighborhoods } = useSupabaseQuery('neighborhoods', { order: { column: 'sort_order' }, fallbackData: [] })
+  const areas = supabaseConfigured ? neighborhoods.slice(0, 5).map(n => n.name) : siteConfig.neighborhoods.slice(0, 5).map(n => n.name)
 
   return (
     <footer id="contact" className="bg-primary pt-16 pb-8">
@@ -27,18 +32,18 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center text-accent font-bold text-lg">
-                {siteConfig.companyName.charAt(0)}
+                {settings.companyName.charAt(0)}
               </div>
               <div>
-                <span className="text-white font-bold text-lg">{siteConfig.companyName}</span>
-                <span className="block text-white/40 text-[10px] uppercase tracking-[0.2em]">{siteConfig.tagline}</span>
+                <span className="text-white font-bold text-lg">{settings.companyName}</span>
+                <span className="block text-white/40 text-[10px] uppercase tracking-[0.2em]">{settings.tagline}</span>
               </div>
             </div>
             <p className="text-white/50 text-sm leading-relaxed mb-4">
               {t('footer.description')}
             </p>
             <div className="text-accent text-xs font-medium">
-              {t('footer.nvm')} &middot; KvK: {siteConfig.kvk}
+              {t('footer.nvm')} &middot; KvK: {settings.kvk}
             </div>
           </div>
 
@@ -81,22 +86,22 @@ export default function Footer() {
             <h4 className="text-white font-bold mb-4">{t('footer.contactTitle')}</h4>
             <div className="space-y-3">
               <a
-                href={`tel:${siteConfig.phone}`}
+                href={`tel:${settings.phone}`}
                 className="flex items-center gap-3 text-white/50 hover:text-accent text-sm transition-colors"
               >
                 <Phone size={16} className="text-accent shrink-0" />
-                {siteConfig.phone}
+                {settings.phone}
               </a>
               <a
-                href={`mailto:${siteConfig.email}`}
+                href={`mailto:${settings.email}`}
                 className="flex items-center gap-3 text-white/50 hover:text-accent text-sm transition-colors"
               >
                 <Mail size={16} className="text-accent shrink-0" />
-                {siteConfig.email}
+                {settings.email}
               </a>
               <div className="flex items-start gap-3 text-white/50 text-sm">
                 <MapPin size={16} className="text-accent shrink-0 mt-0.5" />
-                {siteConfig.address}
+                {settings.address}
               </div>
             </div>
           </div>
@@ -105,7 +110,7 @@ export default function Footer() {
         {/* Bottom */}
         <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-white/30 text-sm">
-            &copy; {new Date().getFullYear()} {siteConfig.companyName}. {t('footer.rights')}
+            &copy; {new Date().getFullYear()} {settings.companyName}. {t('footer.rights')}
           </div>
           <div className="flex gap-6">
             <button className="text-white/30 hover:text-white/60 text-sm transition-colors">

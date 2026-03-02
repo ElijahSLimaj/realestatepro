@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../context/LanguageContext'
-import { siteConfig } from '../data/siteConfig'
+import { useSiteSettings } from '../context/SiteSettingsContext'
 import { Shield, Award, Heart, Target } from 'lucide-react'
 
 function AnimatedCounter({ end, suffix = '' }) {
@@ -39,7 +39,8 @@ function AnimatedCounter({ end, suffix = '' }) {
 
 export default function About() {
   const { t } = useLanguage()
-  const { stats } = siteConfig
+  const { settings } = useSiteSettings()
+  const { stats } = settings
 
   const values = [
     { key: 'valueTrust', icon: Shield },

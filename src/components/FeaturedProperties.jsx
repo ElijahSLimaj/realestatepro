@@ -1,11 +1,22 @@
 import { useState } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import { siteConfig } from '../data/siteConfig'
+import { useSupabaseQuery } from '../hooks/useSupabaseQuery'
+import { supabaseConfigured } from '../lib/supabase'
+import { getLocalizedField } from '../lib/utils'
+import { Link } from 'react-router-dom'
 import { Bed, Bath, Maximize, ArrowRight } from 'lucide-react'
 
 export default function FeaturedProperties() {
   const { t, lang } = useLanguage()
   const [activeFilter, setActiveFilter] = useState('all')
+
+  const { data: dbProperties } = useSupabaseQuery('properties', {
+    filters: { is_featured: true, status: 'active' },
+    fallbackData: [],
+  })
+
+  const properties = supabaseConfigured ? dbProperties : siteConfig.properties
 
   const filters = [
     { key: 'all', label: t('properties.filterAll') },
@@ -14,11 +25,11 @@ export default function FeaturedProperties() {
   ]
 
   const filtered = activeFilter === 'all'
-    ? siteConfig.properties
-    : siteConfig.properties.filter(p => p.type === activeFilter)
+    ? properties
+    : properties.filter(p => p.type === activeFilter)
 
   const formatPrice = (price, type) => {
-    const formatted = new Intl.NumberFormat('nl-NL', {
+    const formatted = new Intl.NumberFormat('nl-BE', {
       style: 'currency',
       currency: 'EUR',
       maximumFractionDigits: 0,
@@ -62,15 +73,16 @@ export default function FeaturedProperties() {
         {/* Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((property) => (
-            <div
+            <Link
+              to={`/property/${property.id}`}
               key={property.id}
               className="property-card group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1"
             >
               {/* Image */}
               <div className="relative aspect-[4/3] overflow-hidden">
                 <img
-                  src={property.image}
-                  alt={property.title[lang]}
+                  src={supabaseConfigured ? property.images?.[0] : property.image}
+                  alt={supabaseConfigured ? getLocalizedField(property, 'title', lang) : property.title[lang]}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -98,7 +110,7 @@ export default function FeaturedProperties() {
               {/* Details */}
               <div className="p-6">
                 <h3 className="text-lg font-bold text-primary mb-1 group-hover:text-accent transition-colors">
-                  {property.title[lang]}
+                  {supabaseConfigured ? getLocalizedField(property, 'title', lang) : property.title[lang]}
                 </h3>
                 <p className="text-neutral-500 text-sm mb-4">
                   {property.address}, {property.city}
@@ -118,7 +130,7 @@ export default function FeaturedProperties() {
                   </span>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 

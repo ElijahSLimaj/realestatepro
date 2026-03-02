@@ -1,15 +1,48 @@
 import { useState } from 'react'
 import { useLanguage } from '../context/LanguageContext'
-import { siteConfig } from '../data/siteConfig'
+import { useSiteSettings } from '../context/SiteSettingsContext'
+import { supabase, supabaseConfigured } from '../lib/supabase'
 import { ArrowRight, ChevronDown, Shield, Award, Star, Clock, Search } from 'lucide-react'
 
 export default function Hero() {
   const { t } = useLanguage()
-  const { stats } = siteConfig
+  const { settings } = useSiteSettings()
+  const { stats } = settings
   const [searchMode, setSearchMode] = useState('buy')
+  const [searchLocation, setSearchLocation] = useState('')
+  const [searchType, setSearchType] = useState('')
+  const [searchPrice, setSearchPrice] = useState('')
 
   const scrollTo = (id) => {
     document.querySelector(id)?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const handleSearch = async () => {
+    if (supabaseConfigured && supabase) {
+      try {
+        let query = supabase.from('properties').select('*')
+
+        query = query.eq('listing_type', searchMode === 'buy' ? 'sale' : 'rent')
+
+        if (searchLocation.trim()) {
+          query = query.ilike('city', `%${searchLocation.trim()}%`)
+        }
+
+        if (searchType) {
+          query = query.eq('property_type', searchType)
+        }
+
+        if (searchPrice) {
+          query = query.lte('price', parseInt(searchPrice))
+        }
+
+        await query
+      } catch (err) {
+        console.error('Search error:', err)
+      }
+    }
+
+    scrollTo('#properties')
   }
 
   return (
@@ -99,6 +132,8 @@ export default function Hero() {
                 <label className="block text-white/60 text-xs font-medium mb-1 lg:hidden">{t('hero.searchLocation')}</label>
                 <input
                   type="text"
+                  value={searchLocation}
+                  onChange={(e) => setSearchLocation(e.target.value)}
                   placeholder={t('hero.searchLocationPlaceholder')}
                   className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:border-accent transition-colors"
                 />
@@ -107,7 +142,11 @@ export default function Hero() {
               {/* Type */}
               <div>
                 <label className="block text-white/60 text-xs font-medium mb-1 lg:hidden">{t('hero.searchType')}</label>
-                <select className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors appearance-none">
+                <select
+                  value={searchType}
+                  onChange={(e) => setSearchType(e.target.value)}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors appearance-none"
+                >
                   <option value="" className="text-neutral-800">{t('hero.searchTypeAll')}</option>
                   <option value="apartment" className="text-neutral-800">{t('hero.searchTypeApartment')}</option>
                   <option value="house" className="text-neutral-800">{t('hero.searchTypeHouse')}</option>
@@ -119,7 +158,11 @@ export default function Hero() {
               {/* Price */}
               <div>
                 <label className="block text-white/60 text-xs font-medium mb-1 lg:hidden">{t('hero.searchPrice')}</label>
-                <select className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors appearance-none">
+                <select
+                  value={searchPrice}
+                  onChange={(e) => setSearchPrice(e.target.value)}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors appearance-none"
+                >
                   <option value="" className="text-neutral-800">{t('hero.searchPriceAny')}</option>
                   <option value="250000" className="text-neutral-800">{searchMode === 'buy' ? '€250.000' : '€1.000/m'}</option>
                   <option value="500000" className="text-neutral-800">{searchMode === 'buy' ? '€500.000' : '€2.000/m'}</option>
@@ -129,7 +172,10 @@ export default function Hero() {
               </div>
 
               {/* Search button */}
-              <button className="bg-accent hover:bg-accent-dark text-white font-bold px-6 py-3 rounded-lg transition-all hover:shadow-lg flex items-center justify-center gap-2">
+              <button
+                onClick={handleSearch}
+                className="bg-accent hover:bg-accent-dark text-white font-bold px-6 py-3 rounded-lg transition-all hover:shadow-lg flex items-center justify-center gap-2"
+              >
                 <Search size={18} />
                 {t('hero.searchButton')}
               </button>

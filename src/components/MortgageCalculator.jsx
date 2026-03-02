@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useLanguage } from '../context/LanguageContext'
-import { Calculator, ArrowRight } from 'lucide-react'
+import { supabase, supabaseConfigured } from '../lib/supabase'
+import { Calculator, ArrowRight, Check } from 'lucide-react'
 
 export default function MortgageCalculator() {
   const { t } = useLanguage()
@@ -8,6 +9,10 @@ export default function MortgageCalculator() {
   const [downPayment, setDownPayment] = useState(40000)
   const [rate, setRate] = useState(3.8)
   const [term, setTerm] = useState(30)
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const calculation = useMemo(() => {
     const loan = price - downPayment
@@ -27,8 +32,30 @@ export default function MortgageCalculator() {
     return { monthly, totalInterest, totalPayment, loan }
   }, [price, downPayment, rate, term])
 
+  const submitLead = async () => {
+    if (!supabaseConfigured) return
+    setSubmitting(true)
+    try {
+      await supabase.from('leads').insert({
+        type: 'mortgage',
+        email: email || null,
+        phone: phone || null,
+        data: {
+          price, downPayment, rate, term,
+          monthlyPayment: Math.round(calculation.monthly),
+          loanAmount: calculation.loan,
+          totalInterest: Math.round(calculation.totalInterest),
+        },
+      })
+      setSubmitted(true)
+    } catch (err) {
+      console.error('Failed to submit mortgage lead:', err)
+    }
+    setSubmitting(false)
+  }
+
   const formatPrice = (value) => {
-    return new Intl.NumberFormat('nl-NL', {
+    return new Intl.NumberFormat('nl-BE', {
       style: 'currency',
       currency: 'EUR',
       maximumFractionDigits: 0,
@@ -203,10 +230,41 @@ export default function MortgageCalculator() {
               </div>
 
               {/* CTA */}
-              <button className="group w-full bg-accent hover:bg-accent-dark text-white font-bold py-4 rounded-xl transition-all hover:shadow-lg flex items-center justify-center gap-2 text-lg">
-                {t('mortgage.ctaAdvice')}
-                <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
-              </button>
+              {submitted ? (
+                <div className="w-full bg-success/10 text-success font-bold py-4 rounded-xl flex items-center justify-center gap-2 text-lg">
+                  <Check size={20} />
+                  {t('mortgage.ctaAdvice')} ✓
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {supabaseConfigured && (
+                    <div className="flex gap-3 mb-2">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Email"
+                        className="flex-1 border-2 border-neutral-200 rounded-lg px-4 py-2.5 text-sm focus:border-accent focus:outline-none transition-colors"
+                      />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Telefoon"
+                        className="flex-1 border-2 border-neutral-200 rounded-lg px-4 py-2.5 text-sm focus:border-accent focus:outline-none transition-colors"
+                      />
+                    </div>
+                  )}
+                  <button
+                    onClick={submitLead}
+                    disabled={submitting}
+                    className="group w-full bg-accent hover:bg-accent-dark text-white font-bold py-4 rounded-xl transition-all hover:shadow-lg flex items-center justify-center gap-2 text-lg disabled:opacity-50"
+                  >
+                    {t('mortgage.ctaAdvice')}
+                    <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
