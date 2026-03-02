@@ -148,7 +148,7 @@ export const translations = {
       quickViewing: 'Bezichtiging plannen',
       quickValuation: 'Waardebepaling',
       welcomeMessage: 'Welkom bij VastGoed Elite! Hoe kunnen wij u helpen?',
-      autoReply: 'Bedankt voor uw bericht! Een van onze makelaars neemt zo spoedig mogelijk contact met u op.',
+      autoReply: 'Dit is een demo-chat. Na oplevering beantwoordt een AI-assistent automatisch vragen over uw woningen, diensten en regio\'s op basis van uw gegevens. Bij een bezichtigingsaanvraag of complexe vraag wordt het gesprek overgedragen aan een medewerker.',
     },
     detail: {
       back: 'Terug naar woningen',
@@ -400,7 +400,7 @@ export const translations = {
       quickViewing: 'Planifier une visite',
       quickValuation: 'Estimation',
       welcomeMessage: 'Bienvenue chez VastGoed Elite ! Comment pouvons-nous vous aider ?',
-      autoReply: 'Merci pour votre message ! Un de nos agents vous contactera dans les plus brefs délais.',
+      autoReply: 'Ceci est un chat de démonstration. Après livraison, un assistant IA répond automatiquement aux questions sur vos biens, services et quartiers à partir de vos données. Pour une demande de visite ou une question complexe, la conversation est transférée à un agent.',
     },
     detail: {
       back: 'Retour aux propriétés',
@@ -652,7 +652,7 @@ export const translations = {
       quickViewing: 'Schedule a viewing',
       quickValuation: 'Get a valuation',
       welcomeMessage: 'Welcome to VastGoed Elite! How can we help you?',
-      autoReply: 'Thank you for your message! One of our agents will contact you as soon as possible.',
+      autoReply: 'This is a demo chat. After delivery, an AI assistant automatically answers questions about your properties, services and neighborhoods based on your data. When a visitor requests a viewing or asks something it can\'t handle, the conversation is handed off to a team member.',
     },
     detail: {
       back: 'Back to properties',
