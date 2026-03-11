@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, supabaseConfigured } from '../../lib/supabase'
+import { useTenant } from '../../context/TenantContext'
 import {
   Plus,
   Pencil,
@@ -33,18 +34,19 @@ const typeLabels = {
 }
 
 export default function PropertiesList() {
+  const { tenantId } = useTenant()
   const [properties, setProperties] = useState([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(null)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (supabaseConfigured) {
+    if (supabaseConfigured && tenantId) {
       fetchProperties()
     } else {
       setLoading(false)
     }
-  }, [])
+  }, [tenantId])
 
   async function fetchProperties() {
     try {
@@ -52,6 +54,7 @@ export default function PropertiesList() {
       const { data, error: fetchError } = await supabase
         .from('properties')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
 
       if (fetchError) throw fetchError

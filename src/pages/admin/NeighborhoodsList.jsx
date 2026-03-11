@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, supabaseConfigured } from '../../lib/supabase'
+import { useTenant } from '../../context/TenantContext'
 import {
   MapPin,
   Plus,
@@ -23,6 +24,7 @@ const emptyForm = {
 }
 
 export default function NeighborhoodsList() {
+  const { tenantId } = useTenant()
   const [neighborhoods, setNeighborhoods] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -34,10 +36,10 @@ export default function NeighborhoodsList() {
 
   useEffect(() => {
     fetchNeighborhoods()
-  }, [])
+  }, [tenantId])
 
   async function fetchNeighborhoods() {
-    if (!supabaseConfigured) {
+    if (!supabaseConfigured || !tenantId) {
       setLoading(false)
       return
     }
@@ -45,6 +47,7 @@ export default function NeighborhoodsList() {
       const { data, error } = await supabase
         .from('neighborhoods')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('sort_order', { ascending: true })
       if (error) throw error
       setNeighborhoods(data || [])
@@ -92,10 +95,11 @@ export default function NeighborhoodsList() {
         const { error } = await supabase
           .from('neighborhoods')
           .update(payload)
+          .eq('tenant_id', tenantId)
           .eq('id', editing.id)
         if (error) throw error
       } else {
-        const { error } = await supabase.from('neighborhoods').insert(payload)
+        const { error } = await supabase.from('neighborhoods').insert({ ...payload, tenant_id: tenantId })
         if (error) throw error
       }
       setModalOpen(false)

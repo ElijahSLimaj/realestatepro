@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import { useSiteSettings } from '../context/SiteSettingsContext'
+import { useTenant } from '../context/TenantContext'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { ArrowRight, ChevronDown, Shield, Award, Star, Clock, Search } from 'lucide-react'
 
 export default function Hero() {
   const { t } = useLanguage()
   const { settings } = useSiteSettings()
+  const { tenantId } = useTenant()
   const { stats } = settings
   const [searchMode, setSearchMode] = useState('buy')
   const [searchLocation, setSearchLocation] = useState('')
@@ -20,7 +22,7 @@ export default function Hero() {
   const handleSearch = async () => {
     if (supabaseConfigured && supabase) {
       try {
-        let query = supabase.from('properties').select('*')
+        let query = supabase.from('properties').select('*').eq('tenant_id', tenantId)
 
         query = query.eq('listing_type', searchMode === 'buy' ? 'sale' : 'rent')
 

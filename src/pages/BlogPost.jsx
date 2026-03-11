@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useLanguage } from '../context/LanguageContext'
+import { useTenant } from '../context/TenantContext'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { siteConfig } from '../data/siteConfig'
 import { getLocalizedField } from '../lib/utils'
@@ -14,6 +15,7 @@ import {
 export default function BlogPost() {
   const { slug } = useParams()
   const { t, lang } = useLanguage()
+  const { tenantId } = useTenant()
   const [post, setPost] = useState(null)
   const [relatedPosts, setRelatedPosts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -24,6 +26,7 @@ export default function BlogPost() {
         const { data: article } = await supabase
           .from('blog_posts')
           .select('*')
+          .eq('tenant_id', tenantId)
           .eq('slug', slug)
           .single()
         setPost(article)
@@ -32,6 +35,7 @@ export default function BlogPost() {
           const { data: related } = await supabase
             .from('blog_posts')
             .select('*')
+            .eq('tenant_id', tenantId)
             .eq('status', 'published')
             .neq('slug', slug)
             .order('published_at', { ascending: false })

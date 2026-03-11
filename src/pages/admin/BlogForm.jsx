@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, supabaseConfigured } from '../../lib/supabase'
+import { useTenant } from '../../context/TenantContext'
 import {
   Save,
   ArrowLeft,
@@ -50,6 +51,7 @@ function generateSlug(text) {
 }
 
 export default function BlogForm() {
+  const { tenantId } = useTenant()
   const { id } = useParams()
   const navigate = useNavigate()
   const isEditing = !!id
@@ -66,7 +68,7 @@ export default function BlogForm() {
     if (isEditing) {
       fetchPost()
     }
-  }, [id])
+  }, [id, tenantId])
 
   // Auto-clear success message
   useEffect(() => {
@@ -77,7 +79,7 @@ export default function BlogForm() {
   }, [success])
 
   async function fetchPost() {
-    if (!supabaseConfigured) return
+    if (!supabaseConfigured || !tenantId) return
 
     try {
       setLoading(true)
@@ -85,6 +87,7 @@ export default function BlogForm() {
       const { data, error: fetchError } = await supabase
         .from('blog_posts')
         .select('*')
+        .eq('tenant_id', tenantId)
         .eq('id', id)
         .single()
 
@@ -138,7 +141,7 @@ export default function BlogForm() {
   async function handleSubmit(e) {
     e.preventDefault()
 
-    if (!supabaseConfigured) {
+    if (!supabaseConfigured || !tenantId) {
       setError('Supabase is niet geconfigureerd.')
       return
     }
@@ -180,6 +183,7 @@ export default function BlogForm() {
         const { error: updateError } = await supabase
           .from('blog_posts')
           .update(payload)
+          .eq('tenant_id', tenantId)
           .eq('id', id)
 
         if (updateError) throw updateError
@@ -187,7 +191,7 @@ export default function BlogForm() {
       } else {
         const { error: insertError } = await supabase
           .from('blog_posts')
-          .insert([payload])
+          .insert([{ ...payload, tenant_id: tenantId }])
 
         if (insertError) throw insertError
         setSuccess('Artikel succesvol aangemaakt.')

@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react'
 import { useLanguage } from '../context/LanguageContext'
+import { useTenant } from '../context/TenantContext'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { Calculator, ArrowRight, Check } from 'lucide-react'
 
 export default function MortgageCalculator() {
   const { t } = useLanguage()
+  const { tenantId } = useTenant()
   const [price, setPrice] = useState(400000)
   const [downPayment, setDownPayment] = useState(40000)
   const [rate, setRate] = useState(3.8)
@@ -37,6 +39,7 @@ export default function MortgageCalculator() {
     setSubmitting(true)
     try {
       await supabase.from('leads').insert({
+        tenant_id: tenantId,
         type: 'mortgage',
         email: email || null,
         phone: phone || null,

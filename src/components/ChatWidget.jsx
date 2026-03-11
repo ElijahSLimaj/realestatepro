@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import { useSiteSettings } from '../context/SiteSettingsContext'
+import { useTenant } from '../context/TenantContext'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { MessageCircle, X, Send } from 'lucide-react'
 
 export default function ChatWidget() {
   const { t } = useLanguage()
   const { settings } = useSiteSettings()
+  const { tenantId } = useTenant()
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -22,7 +24,7 @@ export default function ChatWidget() {
       if (supabaseConfigured) {
         supabase
           .from('chat_sessions')
-          .insert({ status: 'active' })
+          .insert({ tenant_id: tenantId, status: 'active' })
           .select('id')
           .single()
           .then(({ data }) => {
@@ -70,6 +72,7 @@ export default function ChatWidget() {
 
     if (supabaseConfigured && sessionId) {
       await supabase.from('chat_messages').insert({
+        tenant_id: tenantId,
         session_id: sessionId,
         sender: 'visitor',
         message: text,

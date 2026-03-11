@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Outlet, NavLink, Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useTenant } from '../../context/TenantContext'
+import { useSiteSettings } from '../../context/SiteSettingsContext'
 import {
   LayoutDashboard,
   Home,
@@ -16,10 +18,12 @@ import {
   Menu,
   X,
   Loader2,
+  Handshake,
 } from 'lucide-react'
 
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/admin/deals', icon: Handshake, label: 'Deals' },
   { to: '/admin/properties', icon: Home, label: 'Woningen' },
   { to: '/admin/blog', icon: FileText, label: 'Blog' },
   { to: '/admin/testimonials', icon: Star, label: 'Recensies' },
@@ -30,7 +34,7 @@ const navItems = [
   { to: '/admin/settings', icon: Settings, label: 'Instellingen' },
 ]
 
-function SidebarContent({ onSignOut, onNavClick }) {
+function SidebarContent({ onSignOut, onNavClick, tenantName }) {
   return (
     <div className="flex flex-col h-full">
       {/* Logo / Brand */}
@@ -41,7 +45,7 @@ function SidebarContent({ onSignOut, onNavClick }) {
           </div>
           <div>
             <h1 className="text-white font-bold text-lg leading-tight tracking-tight">
-              VastGoed Elite
+              {tenantName || 'RealEstatePro'}
             </h1>
             <p className="text-white/40 text-xs">Administratie</p>
           </div>
@@ -95,7 +99,10 @@ function SidebarContent({ onSignOut, onNavClick }) {
 
 export default function AdminLayout() {
   const { user, loading, signOut } = useAuth()
+  const { tenant } = useTenant()
+  const { settings } = useSiteSettings()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const tenantName = settings?.companyName || tenant?.name || 'RealEstatePro'
 
   if (loading) {
     return (
@@ -138,7 +145,7 @@ export default function AdminLayout() {
 
       {/* Sidebar - desktop */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-primary">
-        <SidebarContent onSignOut={handleSignOut} onNavClick={undefined} />
+        <SidebarContent onSignOut={handleSignOut} onNavClick={undefined} tenantName={tenantName} />
       </aside>
 
       {/* Sidebar - mobile */}
@@ -147,7 +154,7 @@ export default function AdminLayout() {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <SidebarContent onSignOut={handleSignOut} onNavClick={closeSidebar} />
+        <SidebarContent onSignOut={handleSignOut} onNavClick={closeSidebar} tenantName={tenantName} />
       </aside>
 
       {/* Main content */}

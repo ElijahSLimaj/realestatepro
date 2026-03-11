@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, supabaseConfigured } from '../../lib/supabase'
+import { useTenant } from '../../context/TenantContext'
 import {
   Briefcase,
   Plus,
@@ -24,6 +25,7 @@ const emptyForm = {
 }
 
 export default function ServicesList() {
+  const { tenantId } = useTenant()
   const [services, setServices] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -35,10 +37,10 @@ export default function ServicesList() {
 
   useEffect(() => {
     fetchServices()
-  }, [])
+  }, [tenantId])
 
   async function fetchServices() {
-    if (!supabaseConfigured) {
+    if (!supabaseConfigured || !tenantId) {
       setLoading(false)
       return
     }
@@ -46,6 +48,7 @@ export default function ServicesList() {
       const { data, error } = await supabase
         .from('services')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('sort_order', { ascending: true })
       if (error) throw error
       setServices(data || [])
@@ -92,10 +95,11 @@ export default function ServicesList() {
         const { error } = await supabase
           .from('services')
           .update(payload)
+          .eq('tenant_id', tenantId)
           .eq('id', editing.id)
         if (error) throw error
       } else {
-        const { error } = await supabase.from('services').insert(payload)
+        const { error } = await supabase.from('services').insert({ ...payload, tenant_id: tenantId })
         if (error) throw error
       }
       setModalOpen(false)

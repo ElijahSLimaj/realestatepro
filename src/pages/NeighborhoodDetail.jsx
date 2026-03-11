@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useLanguage } from '../context/LanguageContext'
+import { useTenant } from '../context/TenantContext'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { siteConfig } from '../data/siteConfig'
 import { getLocalizedField } from '../lib/utils'
@@ -15,6 +16,7 @@ import {
 export default function NeighborhoodDetail() {
   const { id } = useParams()
   const { t, lang } = useLanguage()
+  const { tenantId } = useTenant()
   const [neighborhood, setNeighborhood] = useState(null)
   const [properties, setProperties] = useState([])
   const [loading, setLoading] = useState(true)
@@ -25,6 +27,7 @@ export default function NeighborhoodDetail() {
         const { data: area } = await supabase
           .from('neighborhoods')
           .select('*')
+          .eq('tenant_id', tenantId)
           .eq('id', id)
           .single()
         setNeighborhood(area)
@@ -33,6 +36,7 @@ export default function NeighborhoodDetail() {
           const { data: props } = await supabase
             .from('properties')
             .select('*')
+            .eq('tenant_id', tenantId)
             .ilike('city', `%${area.name.split(' ')[0]}%`)
             .eq('status', 'active')
           setProperties(props || [])

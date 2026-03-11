@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, supabaseConfigured } from '../../lib/supabase'
+import { useTenant } from '../../context/TenantContext'
 import {
   Settings as SettingsIcon,
   Loader2,
@@ -34,6 +35,7 @@ const DEFAULT_SETTINGS = {
 }
 
 export default function Settings() {
+  const { tenantId } = useTenant()
   const [form, setForm] = useState(DEFAULT_SETTINGS)
   const [settingsId, setSettingsId] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -43,10 +45,10 @@ export default function Settings() {
 
   useEffect(() => {
     fetchSettings()
-  }, [])
+  }, [tenantId])
 
   async function fetchSettings() {
-    if (!supabaseConfigured) {
+    if (!supabaseConfigured || !tenantId) {
       setLoading(false)
       return
     }
@@ -54,6 +56,7 @@ export default function Settings() {
       const { data, error } = await supabase
         .from('site_settings')
         .select('*')
+        .eq('tenant_id', tenantId)
         .limit(1)
         .single()
 
@@ -133,13 +136,14 @@ export default function Settings() {
         const { error } = await supabase
           .from('site_settings')
           .update(payload)
+          .eq('tenant_id', tenantId)
           .eq('id', settingsId)
         if (error) throw error
       } else {
         // Insert new row (upsert)
         const { data, error } = await supabase
           .from('site_settings')
-          .insert(payload)
+          .insert({ ...payload, tenant_id: tenantId })
           .select()
           .single()
         if (error) throw error

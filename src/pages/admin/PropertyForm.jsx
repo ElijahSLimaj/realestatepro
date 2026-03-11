@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase, supabaseConfigured } from '../../lib/supabase'
+import { useTenant } from '../../context/TenantContext'
 import {
   Save,
   ArrowLeft,
@@ -60,6 +61,7 @@ const langTabs = [
 ]
 
 export default function PropertyForm() {
+  const { tenantId } = useTenant()
   const { id } = useParams()
   const navigate = useNavigate()
   const isEditing = !!id
@@ -72,10 +74,10 @@ export default function PropertyForm() {
   const [success, setSuccess] = useState(null)
 
   useEffect(() => {
-    if (isEditing && supabaseConfigured) {
+    if (isEditing && supabaseConfigured && tenantId) {
       fetchProperty()
     }
-  }, [id])
+  }, [id, tenantId])
 
   async function fetchProperty() {
     try {
@@ -83,6 +85,7 @@ export default function PropertyForm() {
       const { data, error: fetchError } = await supabase
         .from('properties')
         .select('*')
+        .eq('tenant_id', tenantId)
         .eq('id', id)
         .single()
 
@@ -175,13 +178,14 @@ export default function PropertyForm() {
         result = await supabase
           .from('properties')
           .update(record)
+          .eq('tenant_id', tenantId)
           .eq('id', id)
           .select()
           .single()
       } else {
         result = await supabase
           .from('properties')
-          .insert(record)
+          .insert({ ...record, tenant_id: tenantId })
           .select()
           .single()
       }

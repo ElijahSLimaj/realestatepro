@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase, supabaseConfigured } from '../../lib/supabase'
+import { useTenant } from '../../context/TenantContext'
 import {
   MessageSquare,
   Send,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react'
 
 export default function ChatPanel() {
+  const { tenantId } = useTenant()
   const [sessions, setSessions] = useState([])
   const [messages, setMessages] = useState([])
   const [selectedSession, setSelectedSession] = useState(null)
@@ -30,7 +32,7 @@ export default function ChatPanel() {
         supabase?.removeChannel(subscriptionRef.current)
       }
     }
-  }, [])
+  }, [tenantId])
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -38,7 +40,7 @@ export default function ChatPanel() {
   }, [messages])
 
   async function fetchSessions() {
-    if (!supabaseConfigured) {
+    if (!supabaseConfigured || !tenantId) {
       setLoading(false)
       return
     }
@@ -46,6 +48,7 @@ export default function ChatPanel() {
       const { data, error } = await supabase
         .from('chat_sessions')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
       if (error) throw error
       setSessions(data || [])
@@ -116,6 +119,7 @@ export default function ChatPanel() {
         session_id: selectedSession.id,
         sender: 'agent',
         message: reply.trim(),
+        tenant_id: tenantId,
       })
       if (error) throw error
       setReply('')

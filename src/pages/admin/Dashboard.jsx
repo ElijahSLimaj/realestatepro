@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase, supabaseConfigured } from '../../lib/supabase'
-import { Building2, Users, FileText, MessageCircle, TrendingUp, Clock } from 'lucide-react'
+import { useTenant } from '../../context/TenantContext'
+import { Building2, Users, FileText, MessageCircle, TrendingUp, Clock, Handshake, ArrowRight } from 'lucide-react'
 
 const placeholderStats = {
   properties: 24,
   leads: 12,
   blogPosts: 8,
-  chatSessions: 36,
+  activeDeals: 6,
 }
 
 const placeholderLeads = [
@@ -18,18 +20,19 @@ const placeholderLeads = [
 ]
 
 export default function Dashboard() {
+  const { tenantId } = useTenant()
   const [stats, setStats] = useState({
     properties: 0,
     leads: 0,
     blogPosts: 0,
-    chatSessions: 0,
+    activeDeals: 0,
   })
   const [recentLeads, setRecentLeads] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchDashboardData() {
-      if (!supabaseConfigured) {
+      if (!supabaseConfigured || !tenantId) {
         setStats(placeholderStats)
         setRecentLeads(placeholderLeads)
         setLoading(false)
@@ -41,21 +44,21 @@ export default function Dashboard() {
           { count: propertiesCount },
           { count: leadsCount },
           { count: blogPostsCount },
-          { count: chatSessionsCount },
+          { count: dealsCount },
           { data: leads },
         ] = await Promise.all([
-          supabase.from('properties').select('*', { count: 'exact', head: true }),
-          supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'new'),
-          supabase.from('blog_posts').select('*', { count: 'exact', head: true }),
-          supabase.from('chat_sessions').select('*', { count: 'exact', head: true }),
-          supabase.from('leads').select('id, name, email, type, created_at').order('created_at', { ascending: false }).limit(5),
+          supabase.from('properties').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+          supabase.from('leads').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'new'),
+          supabase.from('blog_posts').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+          supabase.from('deals').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).not('stage', 'in', '("completed","lost")'),
+          supabase.from('leads').select('id, name, email, type, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(5),
         ])
 
         setStats({
           properties: propertiesCount ?? 0,
           leads: leadsCount ?? 0,
           blogPosts: blogPostsCount ?? 0,
-          chatSessions: chatSessionsCount ?? 0,
+          activeDeals: dealsCount ?? 0,
         })
         setRecentLeads(leads ?? [])
       } catch (error) {
@@ -66,7 +69,7 @@ export default function Dashboard() {
     }
 
     fetchDashboardData()
-  }, [])
+  }, [tenantId])
 
   const statCards = [
     {
@@ -91,11 +94,12 @@ export default function Dashboard() {
       iconColor: 'text-emerald-600',
     },
     {
-      label: 'Chat Sessions',
-      value: stats.chatSessions,
-      icon: MessageCircle,
+      label: 'Active Deals',
+      value: stats.activeDeals,
+      icon: Handshake,
       bg: 'bg-purple-50',
       iconColor: 'text-purple-600',
+      link: '/admin/deals',
     },
   ]
 

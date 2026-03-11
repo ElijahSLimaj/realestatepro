@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useLanguage } from '../context/LanguageContext'
+import { useTenant } from '../context/TenantContext'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { siteConfig } from '../data/siteConfig'
 import { getLocalizedField } from '../lib/utils'
@@ -15,6 +16,7 @@ import {
 export default function PropertyDetail() {
   const { id } = useParams()
   const { t, lang } = useLanguage()
+  const { tenantId } = useTenant()
   const [property, setProperty] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeImage, setActiveImage] = useState(0)
@@ -35,6 +37,7 @@ export default function PropertyDetail() {
         const { data } = await supabase
           .from('properties')
           .select('*')
+          .eq('tenant_id', tenantId)
           .eq('id', id)
           .single()
         setProperty(data)
@@ -75,6 +78,7 @@ export default function PropertyDetail() {
 
     if (supabaseConfigured) {
       await supabase.from('viewings').insert({
+        tenant_id: tenantId,
         property_id: id,
         name,
         email: email || null,

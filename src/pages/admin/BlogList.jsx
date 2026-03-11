@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, supabaseConfigured } from '../../lib/supabase'
+import { useTenant } from '../../context/TenantContext'
 import {
   Plus,
   Pencil,
@@ -22,6 +23,7 @@ function formatDateNL(dateStr) {
 }
 
 export default function BlogList() {
+  const { tenantId } = useTenant()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -29,10 +31,10 @@ export default function BlogList() {
 
   useEffect(() => {
     fetchPosts()
-  }, [])
+  }, [tenantId])
 
   async function fetchPosts() {
-    if (!supabaseConfigured) {
+    if (!supabaseConfigured || !tenantId) {
       setLoading(false)
       return
     }
@@ -42,6 +44,7 @@ export default function BlogList() {
       const { data, error: fetchError } = await supabase
         .from('blog_posts')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
 
       if (fetchError) throw fetchError

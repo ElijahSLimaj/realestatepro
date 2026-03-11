@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase, supabaseConfigured } from '../lib/supabase'
+import { useTenant } from './TenantContext'
 import { siteConfig } from '../data/siteConfig'
 
 const SiteSettingsContext = createContext()
@@ -17,6 +18,13 @@ function mapDbToConfig(row) {
     primaryColor: row.primary_color,
     accentColor: row.accent_color,
     logoUrl: row.logo_url,
+    heroTitleNl: row.hero_title_nl,
+    heroTitleFr: row.hero_title_fr,
+    heroTitleEn: row.hero_title_en,
+    heroSubtitleNl: row.hero_subtitle_nl,
+    heroSubtitleFr: row.hero_subtitle_fr,
+    heroSubtitleEn: row.hero_subtitle_en,
+    heroImageUrl: row.hero_image_url,
     stats: {
       yearsActive: row.years_active,
       propertiesSold: row.properties_sold,
@@ -25,29 +33,41 @@ function mapDbToConfig(row) {
       googleRating: row.google_rating,
     },
     valuationRates: row.valuation_rates || siteConfig.valuationRates,
+    visibleSections: row.visible_sections || ['hero', 'properties', 'services', 'neighborhoods', 'about', 'testimonials', 'valuation', 'mortgage', 'blog'],
   }
 }
 
+const defaultSettings = {
+  companyName: siteConfig.companyName,
+  tagline: siteConfig.tagline,
+  phone: siteConfig.phone,
+  email: siteConfig.email,
+  address: siteConfig.address,
+  kvk: siteConfig.kvk,
+  btw: siteConfig.btw,
+  defaultLang: siteConfig.defaultLang,
+  primaryColor: siteConfig.primaryColor,
+  accentColor: siteConfig.accentColor,
+  logoUrl: null,
+  heroTitleNl: null,
+  heroTitleFr: null,
+  heroTitleEn: null,
+  heroSubtitleNl: null,
+  heroSubtitleFr: null,
+  heroSubtitleEn: null,
+  heroImageUrl: null,
+  stats: siteConfig.stats,
+  valuationRates: siteConfig.valuationRates,
+  visibleSections: ['hero', 'properties', 'services', 'neighborhoods', 'about', 'testimonials', 'valuation', 'mortgage', 'blog'],
+}
+
 export function SiteSettingsProvider({ children }) {
-  const [settings, setSettings] = useState({
-    companyName: siteConfig.companyName,
-    tagline: siteConfig.tagline,
-    phone: siteConfig.phone,
-    email: siteConfig.email,
-    address: siteConfig.address,
-    kvk: siteConfig.kvk,
-    btw: siteConfig.btw,
-    defaultLang: siteConfig.defaultLang,
-    primaryColor: siteConfig.primaryColor,
-    accentColor: siteConfig.accentColor,
-    logoUrl: null,
-    stats: siteConfig.stats,
-    valuationRates: siteConfig.valuationRates,
-  })
+  const [settings, setSettings] = useState(defaultSettings)
   const [loading, setLoading] = useState(true)
+  const { tenantId } = useTenant()
 
   useEffect(() => {
-    if (!supabaseConfigured) {
+    if (!supabaseConfigured || !tenantId) {
       setLoading(false)
       return
     }
@@ -55,6 +75,7 @@ export function SiteSettingsProvider({ children }) {
     supabase
       .from('site_settings')
       .select('*')
+      .eq('tenant_id', tenantId)
       .limit(1)
       .single()
       .then(({ data, error }) => {
@@ -63,7 +84,7 @@ export function SiteSettingsProvider({ children }) {
         }
         setLoading(false)
       })
-  }, [])
+  }, [tenantId])
 
   return (
     <SiteSettingsContext.Provider value={{ settings, loading, supabaseConfigured }}>

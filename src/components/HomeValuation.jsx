@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import { useSiteSettings } from '../context/SiteSettingsContext'
+import { useTenant } from '../context/TenantContext'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { Home, ArrowRight, Check } from 'lucide-react'
 
 export default function HomeValuation() {
   const { t } = useLanguage()
   const { settings } = useSiteSettings()
+  const { tenantId } = useTenant()
   const [propertyType, setPropertyType] = useState('')
   const [postcode, setPostcode] = useState('')
   const [area, setArea] = useState(100)
@@ -36,6 +38,7 @@ export default function HomeValuation() {
     setSubmitting(true)
     try {
       await supabase.from('leads').insert({
+        tenant_id: tenantId,
         type: 'valuation',
         email: email || null,
         phone: phone || null,

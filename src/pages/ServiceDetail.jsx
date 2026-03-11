@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useLanguage } from '../context/LanguageContext'
+import { useTenant } from '../context/TenantContext'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { getLocalizedField } from '../lib/utils'
 import Header from '../components/Header'
@@ -44,6 +45,7 @@ const staticServices = {
 export default function ServiceDetail() {
   const { key } = useParams()
   const { t, lang } = useLanguage()
+  const { tenantId } = useTenant()
   const [service, setService] = useState(null)
   const [allServices, setAllServices] = useState([])
   const [loading, setLoading] = useState(true)
@@ -54,6 +56,7 @@ export default function ServiceDetail() {
         const { data: services } = await supabase
           .from('services')
           .select('*')
+          .eq('tenant_id', tenantId)
           .order('sort_order')
         setAllServices(services || [])
         const found = (services || []).find(s => s.key === key)

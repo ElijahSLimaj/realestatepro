@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase, supabaseConfigured } from '../lib/supabase'
+import { useTenant } from '../context/TenantContext'
 
-export function useSupabaseQuery(table, { select = '*', filters = {}, order, fallbackData = [] } = {}) {
+export function useSupabaseQuery(table, { select = '*', filters = {}, order, fallbackData = [], tenantScoped = true } = {}) {
   const [data, setData] = useState(fallbackData)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const { tenantId } = useTenant()
 
   useEffect(() => {
     if (!supabaseConfigured) {
@@ -12,7 +14,18 @@ export function useSupabaseQuery(table, { select = '*', filters = {}, order, fal
       return
     }
 
+    // If tenant-scoped but no tenant yet, wait
+    if (tenantScoped && !tenantId) {
+      setLoading(false)
+      return
+    }
+
     let query = supabase.from(table).select(select)
+
+    // Automatically filter by tenant_id for tenant-scoped tables
+    if (tenantScoped && tenantId) {
+      query = query.eq('tenant_id', tenantId)
+    }
 
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -33,7 +46,7 @@ export function useSupabaseQuery(table, { select = '*', filters = {}, order, fal
       }
       setLoading(false)
     })
-  }, [table, select, JSON.stringify(filters), JSON.stringify(order)])
+  }, [table, select, JSON.stringify(filters), JSON.stringify(order), tenantId, tenantScoped])
 
   return { data, loading, error }
 }

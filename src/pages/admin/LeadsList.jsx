@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, supabaseConfigured } from '../../lib/supabase'
+import { useTenant } from '../../context/TenantContext'
 import {
   Users,
   ChevronDown,
@@ -24,6 +25,7 @@ const STATUS_BADGES = {
 }
 
 export default function LeadsList() {
+  const { tenantId } = useTenant()
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -35,10 +37,10 @@ export default function LeadsList() {
 
   useEffect(() => {
     fetchLeads()
-  }, [])
+  }, [tenantId])
 
   async function fetchLeads() {
-    if (!supabaseConfigured) {
+    if (!supabaseConfigured || !tenantId) {
       setLoading(false)
       return
     }
@@ -46,6 +48,7 @@ export default function LeadsList() {
       const { data, error } = await supabase
         .from('leads')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
       if (error) throw error
       setLeads(data || [])

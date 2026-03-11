@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, supabaseConfigured } from '../../lib/supabase'
+import { useTenant } from '../../context/TenantContext'
 import {
   Star,
   Plus,
@@ -26,6 +27,7 @@ const emptyForm = {
 }
 
 export default function TestimonialsList() {
+  const { tenantId } = useTenant()
   const [testimonials, setTestimonials] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -37,10 +39,10 @@ export default function TestimonialsList() {
 
   useEffect(() => {
     fetchTestimonials()
-  }, [])
+  }, [tenantId])
 
   async function fetchTestimonials() {
-    if (!supabaseConfigured) {
+    if (!supabaseConfigured || !tenantId) {
       setLoading(false)
       return
     }
@@ -48,6 +50,7 @@ export default function TestimonialsList() {
       const { data, error } = await supabase
         .from('testimonials')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
       if (error) throw error
       setTestimonials(data || [])
@@ -91,10 +94,11 @@ export default function TestimonialsList() {
         const { error } = await supabase
           .from('testimonials')
           .update(form)
+          .eq('tenant_id', tenantId)
           .eq('id', editing.id)
         if (error) throw error
       } else {
-        const { error } = await supabase.from('testimonials').insert(form)
+        const { error } = await supabase.from('testimonials').insert({ ...form, tenant_id: tenantId })
         if (error) throw error
       }
       setModalOpen(false)
